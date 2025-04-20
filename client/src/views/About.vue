@@ -97,18 +97,24 @@
         若您在使用過程中有任何問題或建議，歡迎與我們聯繫：
       </p>
       <p>
-        <i class="el-icon-message"></i> 電子郵件：support@carbon-calculator.com
+        <el-icon><Message /></el-icon> 電子郵件：support@carbon-calculator.com
       </p>
       <p>
-        <i class="el-icon-phone"></i> 聯絡電話：(02) 2222-3333
+        <el-icon><Phone /></el-icon> 聯絡電話：(02) 2222-3333
       </p>
     </div>
   </div>
 </template>
 
 <script>
+import { Message, Phone } from '@element-plus/icons-vue'
+
 export default {
-  name: 'AboutPage'
+  name: 'AboutPage',
+  components: {
+    Message,
+    Phone
+  }
 }
 </script>
 

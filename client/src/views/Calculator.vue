@@ -52,7 +52,9 @@
         <div class="scope-header">
           <h2 class="section-title">範疇一：直接排放</h2>
           <el-tooltip content="包括企業擁有或控制的排放源產生的直接溫室氣體排放，如鍋爐燃料燃燒、公司車輛等" placement="top">
-            <el-button type="info" icon="el-icon-question" circle size="small"></el-button>
+            <el-button type="info" circle size="small">
+              <el-icon><QuestionFilled /></el-icon>
+            </el-button>
           </el-tooltip>
         </div>
         
@@ -106,10 +108,11 @@
               <div class="source-actions">
                 <el-button 
                   type="danger" 
-                  icon="el-icon-delete" 
                   circle 
                   @click="removeSource('scope1', index)"
-                ></el-button>
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
               </div>
             </div>
             
@@ -119,7 +122,7 @@
           </div>
           
           <el-button type="primary" plain @click="addSource('scope1')" class="add-source-btn">
-            <i class="el-icon-plus"></i> 新增排放源
+            <el-icon><Plus /></el-icon> 新增排放源
           </el-button>
         </div>
       </div>
@@ -129,7 +132,9 @@
         <div class="scope-header">
           <h2 class="section-title">範疇二：間接排放（能源）</h2>
           <el-tooltip content="因使用外購電力、熱力、蒸汽等能源導致的間接溫室氣體排放" placement="top">
-            <el-button type="info" icon="el-icon-question" circle size="small"></el-button>
+            <el-button type="info" circle size="small">
+              <el-icon><QuestionFilled /></el-icon>
+            </el-button>
           </el-tooltip>
         </div>
         
@@ -182,10 +187,11 @@
               <div class="source-actions">
                 <el-button 
                   type="danger" 
-                  icon="el-icon-delete" 
                   circle 
                   @click="removeSource('scope2', index)"
-                ></el-button>
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
               </div>
             </div>
             
@@ -195,7 +201,7 @@
           </div>
           
           <el-button type="primary" plain @click="addSource('scope2')" class="add-source-btn">
-            <i class="el-icon-plus"></i> 新增排放源
+            <el-icon><Plus /></el-icon> 新增排放源
           </el-button>
         </div>
       </div>
@@ -205,7 +211,9 @@
         <div class="scope-header">
           <h2 class="section-title">範疇三：其他間接排放</h2>
           <el-tooltip content="包括企業價值鏈上下游的其他間接排放，如材料採購、員工通勤、產品運輸等" placement="top">
-            <el-button type="info" icon="el-icon-question" circle size="small"></el-button>
+            <el-button type="info" circle size="small">
+              <el-icon><QuestionFilled /></el-icon>
+            </el-button>
           </el-tooltip>
         </div>
         
@@ -261,10 +269,11 @@
               <div class="source-actions">
                 <el-button 
                   type="danger" 
-                  icon="el-icon-delete" 
                   circle 
                   @click="removeSource('scope3', index)"
-                ></el-button>
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
               </div>
             </div>
             
@@ -274,7 +283,7 @@
           </div>
           
           <el-button type="primary" plain @click="addSource('scope3')" class="add-source-btn">
-            <i class="el-icon-plus"></i> 新增排放源
+            <el-icon><Plus /></el-icon> 新增排放源
           </el-button>
         </div>
       </div>
@@ -328,7 +337,8 @@
           </div>
           
           <div class="results-actions">
-            <el-button type="success" icon="el-icon-download">
+            <el-button type="success">
+              <el-icon><Download /></el-icon>
               導出報告
             </el-button>
           </div>
@@ -340,9 +350,16 @@
 
 <script>
 import { mapState, mapGetters, mapActions } from 'vuex'
+import { Delete, Plus, QuestionFilled, Download } from '@element-plus/icons-vue'
 
 export default {
   name: 'CalculatorPage',
+  components: {
+    Delete,
+    Plus,
+    QuestionFilled,
+    Download
+  },
   data() {
     return {
       basicInfo: {

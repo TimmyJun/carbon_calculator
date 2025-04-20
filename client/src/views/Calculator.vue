@@ -394,7 +394,7 @@
           </div>
           
           <div class="results-actions">
-            <el-button type="success">
+            <el-button type="success" @click="exportToPdf">
               <el-icon><Download /></el-icon>
               導出報告
             </el-button>
@@ -408,6 +408,7 @@
 <script>
 import { mapState, mapGetters, mapActions } from 'vuex'
 import { Delete, Plus, QuestionFilled, Download } from '@element-plus/icons-vue'
+import html2pdf from 'html2pdf.js'
 
 export default {
   name: 'CalculatorPage',
@@ -573,7 +574,7 @@ export default {
       }
       
       // 調用 store 中的計算方法
-      await this.calculateEmissions(payload)
+      await this.$store.dispatch('calculateEmissions', payload)
       this.showResults = true
       
       // 滾動到結果區域
@@ -592,6 +593,225 @@ export default {
     updateYearSelection(type, source) {
       // 根據用戶選擇的年份更新對應排放源的列表
       source.materialType = ''; // 清空之前選擇的材料類型
+    },
+    
+    exportToPdf() {
+      // 創建一個新的 div 元素作為 PDF 內容
+      const pdfContent = document.createElement('div');
+      pdfContent.className = 'pdf-report';
+      
+      // 添加樣式
+      pdfContent.style.padding = '20px';
+      pdfContent.style.fontFamily = 'Arial, sans-serif';
+      
+      // 添加頁眉
+      const header = document.createElement('div');
+      header.innerHTML = `
+        <h1 style="color: #2c8850; text-align: center; margin-bottom: 20px;">碳排放計算報告</h1>
+        <p style="text-align: center; margin-bottom: 30px;">
+          <strong>企業名稱：</strong>${this.basicInfo.companyName || '未提供'} &nbsp;&nbsp;
+          <strong>統一編號：</strong>${this.basicInfo.companyId || '未提供'} &nbsp;&nbsp;
+          <strong>報告年份：</strong>${this.basicInfo.reportYear || new Date().getFullYear()}
+        </p>
+        <p style="text-align: center; margin-bottom: 30px;">
+          <strong>產品名稱：</strong>${this.basicInfo.productName || '未提供'} &nbsp;&nbsp;
+          <strong>總產量：</strong>${this.basicInfo.productionUnits || 0} ${this.basicInfo.productionUnit || '單位'}
+        </p>
+        <hr style="margin: 20px 0; border: 1px solid #eee;">
+      `;
+      pdfContent.appendChild(header);
+      
+      // 添加結果摘要
+      const summary = document.createElement('div');
+      summary.innerHTML = `
+        <h2 style="color: #2c8850; margin: 20px 0;">碳排放摘要</h2>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+          <tr style="background-color: #f0f9eb;">
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">排放範疇</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">排放量 (kgCO2e)</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">占比</th>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 10px;">範疇一：直接排放</td>
+            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatNumber(this.calculationResults.scope1)}</td>
+            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatNumber(this.calculationResults.scope1 / this.calculationResults.total * 100 || 0)}%</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 10px;">範疇二：能源間接排放</td>
+            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatNumber(this.calculationResults.scope2)}</td>
+            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatNumber(this.calculationResults.scope2 / this.calculationResults.total * 100 || 0)}%</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 10px;">範疇三：其他間接排放</td>
+            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatNumber(this.calculationResults.scope3)}</td>
+            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatNumber(this.calculationResults.scope3 / this.calculationResults.total * 100 || 0)}%</td>
+          </tr>
+          <tr style="font-weight: bold; background-color: #f0f9eb;">
+            <td style="border: 1px solid #ddd; padding: 10px;">總排放量</td>
+            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">${this.formatNumber(this.calculationResults.total)}</td>
+            <td style="border: 1px solid #ddd; padding: 10px; text-align: right;">100%</td>
+          </tr>
+        </table>
+        
+        <div style="text-align: center; margin: 30px 0; padding: 15px; background-color: #f0f9eb; border: 1px solid #e1f3d8; border-radius: 4px;">
+          <h3 style="margin-bottom: 10px;">單位產品碳足跡</h3>
+          <p style="font-size: 24px; font-weight: bold; color: #2c8850;">${this.formatNumber(this.productEmissions.perUnit)} kgCO2e/${this.basicInfo.productionUnit}</p>
+        </div>
+      `;
+      pdfContent.appendChild(summary);
+      
+      // 添加排放源詳情
+      const details = document.createElement('div');
+      
+      // 範疇一詳情
+      let scope1Details = '';
+      this.scope1Sources.forEach((source, index) => {
+        if (source.materialType && source.amount > 0) {
+          scope1Details += `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${this.getSourceTypeName(source.sourceType)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${source.materialType}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${source.amount} ${this.getSelectedFactorUnit(source.materialType)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${source.factor}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${this.formatNumber(source.amount * source.factor)}</td>
+            </tr>
+          `;
+        }
+      });
+      
+      // 範疇二詳情
+      let scope2Details = '';
+      this.scope2Sources.forEach((source, index) => {
+        if (source.materialType && source.amount > 0) {
+          scope2Details += `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${this.getSourceTypeName(source.sourceType)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${source.materialType}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${source.amount} ${this.getSelectedFactorUnit(source.materialType)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${source.factor}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${this.formatNumber(source.amount * source.factor)}</td>
+            </tr>
+          `;
+        }
+      });
+      
+      // 範疇三詳情
+      let scope3Details = '';
+      this.scope3Sources.forEach((source, index) => {
+        if (source.materialType && source.amount > 0) {
+          scope3Details += `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${this.getSourceTypeName(source.sourceType)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${source.materialType}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${source.amount} ${this.getSelectedFactorUnit(source.materialType)}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${source.factor}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${this.formatNumber(source.amount * source.factor)}</td>
+            </tr>
+          `;
+        }
+      });
+      
+      details.innerHTML = `
+        <h2 style="color: #2c8850; margin: 30px 0 20px;">詳細排放源數據</h2>
+        
+        <h3 style="margin: 20px 0 10px;">範疇一：直接排放</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr style="background-color: #f5f5f5;">
+            <th style="border: 1px solid #ddd; padding: 8px;">#</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">排放源類型</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">燃料/材料</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">使用量</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">排放係數</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">排放量 (kgCO2e)</th>
+          </tr>
+          ${scope1Details || '<tr><td colspan="6" style="border: 1px solid #ddd; padding: 8px; text-align: center;">無數據</td></tr>'}
+        </table>
+        
+        <h3 style="margin: 20px 0 10px;">範疇二：能源間接排放</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr style="background-color: #f5f5f5;">
+            <th style="border: 1px solid #ddd; padding: 8px;">#</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">排放源類型</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">能源類型</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">使用量</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">排放係數</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">排放量 (kgCO2e)</th>
+          </tr>
+          ${scope2Details || '<tr><td colspan="6" style="border: 1px solid #ddd; padding: 8px; text-align: center;">無數據</td></tr>'}
+        </table>
+        
+        <h3 style="margin: 20px 0 10px;">範疇三：其他間接排放</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr style="background-color: #f5f5f5;">
+            <th style="border: 1px solid #ddd; padding: 8px;">#</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">排放源類型</th>
+            <th style="border: 1px solid #ddd; padding: 8px;">活動類型</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">活動量</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">排放係數</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">排放量 (kgCO2e)</th>
+          </tr>
+          ${scope3Details || '<tr><td colspan="6" style="border: 1px solid #ddd; padding: 8px; text-align: center;">無數據</td></tr>'}
+        </table>
+      `;
+      pdfContent.appendChild(details);
+      
+      // 添加頁腳信息
+      const footer = document.createElement('div');
+      footer.innerHTML = `
+        <hr style="margin: 20px 0; border: 1px solid #eee;">
+        <p style="text-align: center; font-size: 12px; color: #666;">
+          此報告由碳足跡計算器系統自動生成於 ${new Date().toLocaleString()}
+        </p>
+        <p style="text-align: center; font-size: 12px; color: #666;">
+          © ${new Date().getFullYear()} 碳足跡計算器 | 數據來源：環境部環境資料開放平臺
+        </p>
+      `;
+      pdfContent.appendChild(footer);
+      
+      // 將內容添加到文檔中暫時使用，下載後移除
+      document.body.appendChild(pdfContent);
+      
+      // 配置 PDF 選項
+      const options = {
+        margin: 10,
+        filename: `${this.basicInfo.companyName || '企業'}_碳排放報告_${this.basicInfo.reportYear || new Date().getFullYear()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      // 生成 PDF
+      html2pdf().from(pdfContent).set(options).save().then(() => {
+        // 下載完成後移除臨時元素
+        document.body.removeChild(pdfContent);
+      });
+    },
+    
+    getSourceTypeName(type) {
+      const typeMap = {
+        // 範疇一
+        stationaryCombustion: '固定燃燒源',
+        mobileCombustion: '移動燃燒源',
+        processEmission: '製程排放',
+        fugitiveEmission: '逸散排放',
+        // 範疇二
+        electricity: '電力使用',
+        water: '自來水',
+        heat: '熱力使用',
+        steam: '蒸氣使用',
+        // 範疇三
+        upstreamTransportation: '上游運輸',
+        downstreamTransportation: '下游運輸',
+        employeeCommuting: '員工通勤',
+        businessTravel: '商務差旅',
+        wasteDisposal: '廢棄物處理',
+        purchasedGoodsServices: '採購的商品和服務'
+      };
+      
+      return typeMap[type] || type;
     }
   },
   watch: {

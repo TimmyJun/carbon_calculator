@@ -6,6 +6,13 @@ const API_BASE_URL = process.env.VUE_APP_API_URL || 'http://localhost:5000'
 export default createStore({
   state: {
     carbonFactors: [],
+    scope1Factors: [],
+    scope2Factors: [],
+    scope3Factors: [],
+    availableYears: {
+      electricity: [],
+      water: []
+    },
     loading: false,
     error: null,
     calculationResults: {
@@ -21,6 +28,20 @@ export default createStore({
   },
   getters: {
     getCarbonFactors: state => state.carbonFactors,
+    getScope1Factors: state => state.scope1Factors,
+    getScope2Factors: state => state.scope2Factors,
+    getScope3Factors: state => state.scope3Factors,
+    getAvailableYears: state => state.availableYears,
+    getElectricityFactorsByYear: (state) => (year) => {
+      return state.scope2Factors.filter(factor => 
+        factor.name.includes('電力') && factor.name.includes(year)
+      );
+    },
+    getWaterFactorsByYear: (state) => (year) => {
+      return state.scope2Factors.filter(factor => 
+        factor.name.includes('自來水') && factor.name.includes(year)
+      );
+    },
     getLoading: state => state.loading,
     getError: state => state.error,
     getCalculationResults: state => state.calculationResults,
@@ -29,6 +50,18 @@ export default createStore({
   mutations: {
     SET_CARBON_FACTORS(state, factors) {
       state.carbonFactors = factors
+    },
+    SET_SCOPE1_FACTORS(state, factors) {
+      state.scope1Factors = factors
+    },
+    SET_SCOPE2_FACTORS(state, factors) {
+      state.scope2Factors = factors
+    },
+    SET_SCOPE3_FACTORS(state, factors) {
+      state.scope3Factors = factors
+    },
+    SET_AVAILABLE_YEARS(state, years) {
+      state.availableYears = years
     },
     SET_LOADING(state, status) {
       state.loading = status
@@ -50,8 +83,12 @@ export default createStore({
       
       try {
         const response = await axios.get(`${API_BASE_URL}/api/carbon-factors`)
-        if (response.data && response.data.records) {
+        if (response.data) {
           commit('SET_CARBON_FACTORS', response.data.records)
+          commit('SET_SCOPE1_FACTORS', response.data.scope1)
+          commit('SET_SCOPE2_FACTORS', response.data.scope2)
+          commit('SET_SCOPE3_FACTORS', response.data.scope3)
+          commit('SET_AVAILABLE_YEARS', response.data.years)
         } else {
           throw new Error('無效的API響應格式')
         }

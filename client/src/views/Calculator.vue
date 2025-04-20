@@ -78,7 +78,7 @@
                     filterable
                   >
                     <el-option
-                      v-for="factor in filteredFactors"
+                      v-for="factor in scope1FactorsFiltered"
                       :key="factor.name"
                       :label="factor.name"
                       :value="factor.name"
@@ -145,10 +145,37 @@
                 <el-form-item label="排放源">
                   <el-select v-model="source.sourceType" placeholder="選擇排放源類型">
                     <el-option label="電力使用" value="electricity"></el-option>
+                    <el-option label="自來水" value="water"></el-option>
                     <el-option label="熱力使用" value="heat"></el-option>
                     <el-option label="蒸氣使用" value="steam"></el-option>
                   </el-select>
                 </el-form-item>
+                
+                <template v-if="source.sourceType === 'electricity'">
+                  <el-form-item label="年份">
+                    <el-select v-model="source.year" placeholder="選擇年份" @change="updateYearSelection('electricity', source)">
+                      <el-option
+                        v-for="year in availableYears.electricity"
+                        :key="year"
+                        :label="`${year}年`"
+                        :value="year"
+                      ></el-option>
+                    </el-select>
+                  </el-form-item>
+                </template>
+                
+                <template v-if="source.sourceType === 'water'">
+                  <el-form-item label="年份">
+                    <el-select v-model="source.year" placeholder="選擇年份" @change="updateYearSelection('water', source)">
+                      <el-option
+                        v-for="year in availableYears.water"
+                        :key="year"
+                        :label="`${year}年`"
+                        :value="year"
+                      ></el-option>
+                    </el-select>
+                  </el-form-item>
+                </template>
                 
                 <el-form-item label="能源類型">
                   <el-select 
@@ -156,17 +183,47 @@
                     placeholder="選擇能源類型"
                     filterable
                   >
-                    <el-option
-                      v-for="factor in filteredFactors"
-                      :key="factor.name"
-                      :label="factor.name"
-                      :value="factor.name"
-                    >
-                      <span>{{ factor.name }}</span>
-                      <span style="float: right; color: #8492a6; font-size: 13px">
-                        {{ factor.coe }} {{ factor.unit }}
-                      </span>
-                    </el-option>
+                    <template v-if="source.sourceType === 'electricity' && source.year">
+                      <el-option
+                        v-for="factor in getElectricityFactorsByYear(source.year)"
+                        :key="factor.name"
+                        :label="factor.name"
+                        :value="factor.name"
+                      >
+                        <span>{{ factor.name }}</span>
+                        <span style="float: right; color: #8492a6; font-size: 13px">
+                          {{ factor.coe }} {{ factor.unit }}
+                        </span>
+                      </el-option>
+                    </template>
+                    
+                    <template v-else-if="source.sourceType === 'water' && source.year">
+                      <el-option
+                        v-for="factor in getWaterFactorsByYear(source.year)"
+                        :key="factor.name"
+                        :label="factor.name"
+                        :value="factor.name"
+                      >
+                        <span>{{ factor.name }}</span>
+                        <span style="float: right; color: #8492a6; font-size: 13px">
+                          {{ factor.coe }} {{ factor.unit }}
+                        </span>
+                      </el-option>
+                    </template>
+                    
+                    <template v-else>
+                      <el-option
+                        v-for="factor in scope2FactorsFiltered"
+                        :key="factor.name"
+                        :label="factor.name"
+                        :value="factor.name"
+                      >
+                        <span>{{ factor.name }}</span>
+                        <span style="float: right; color: #8492a6; font-size: 13px">
+                          {{ factor.coe }} {{ factor.unit }}
+                        </span>
+                      </el-option>
+                    </template>
                   </el-select>
                 </el-form-item>
                 
@@ -239,7 +296,7 @@
                     filterable
                   >
                     <el-option
-                      v-for="factor in filteredFactors"
+                      v-for="factor in scope3FactorsFiltered"
                       :key="factor.name"
                       :label="factor.name"
                       :value="factor.name"
@@ -373,12 +430,29 @@ export default {
       scope1Sources: [],
       scope2Sources: [],
       scope3Sources: [],
-      showResults: false
+      showResults: false,
+      selectedYear: {
+        electricity: '',
+        water: ''
+      }
     }
   },
   computed: {
-    ...mapState(['carbonFactors', 'loading', 'error']),
-    ...mapGetters(['getCalculationResults', 'getProductEmissions']),
+    ...mapState([
+      'carbonFactors', 
+      'scope1Factors', 
+      'scope2Factors', 
+      'scope3Factors', 
+      'availableYears', 
+      'loading', 
+      'error'
+    ]),
+    ...mapGetters([
+      'getCalculationResults', 
+      'getProductEmissions', 
+      'getElectricityFactorsByYear', 
+      'getWaterFactorsByYear'
+    ]),
     
     calculationResults() {
       return this.getCalculationResults
@@ -388,8 +462,35 @@ export default {
       return this.getProductEmissions
     },
     
-    filteredFactors() {
-      return this.carbonFactors
+    scope1FactorsFiltered() {
+      return this.scope1Factors
+    },
+    
+    scope2FactorsFiltered() {
+      // 過濾掉已經在年份選擇中的項目（電力和自來水）
+      return this.scope2Factors.filter(factor => 
+        !factor.name.includes('電力') && !factor.name.includes('自來水')
+      )
+    },
+    
+    scope3FactorsFiltered() {
+      return this.scope3Factors
+    },
+    
+    filteredElectricityFactors() {
+      const source = this.scope2Sources.find(s => s.sourceType === 'electricity');
+      if (source && source.year) {
+        return this.getElectricityFactorsByYear(source.year);
+      }
+      return [];
+    },
+    
+    filteredWaterFactors() {
+      const source = this.scope2Sources.find(s => s.sourceType === 'water');
+      if (source && source.year) {
+        return this.getWaterFactorsByYear(source.year);
+      }
+      return [];
     },
     
     isCalculateDisabled() {
@@ -413,6 +514,11 @@ export default {
         materialType: '',
         amount: 0,
         factor: 0
+      }
+      
+      // 為範疇二的電力和自來水添加年份字段
+      if (scope === 'scope2') {
+        newSource.year = ''
       }
       
       if (scope === 'scope1') {
@@ -481,6 +587,11 @@ export default {
     
     formatNumber(num) {
       return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    },
+    
+    updateYearSelection(type, source) {
+      // 根據用戶選擇的年份更新對應排放源的列表
+      source.materialType = ''; // 清空之前選擇的材料類型
     }
   },
   watch: {

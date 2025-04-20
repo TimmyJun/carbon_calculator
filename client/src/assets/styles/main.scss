@@ -1,0 +1,99 @@
+/* 全局樣式 */
+:root {
+  --primary-color: #2c8850;
+  --secondary-color: #4bb07c;
+  --accent-color: #1b5e34;
+  --background-color: #f5f9f7;
+  --text-primary: #333;
+  --text-secondary: #666;
+  --border-color: #e0e0e0;
+  --error-color: #f56c6c;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.page-title {
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+// 結果區塊樣式
+.result-panel {
+  background-color: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  padding: 15px;
+  border-radius: 4px;
+  margin-top: 20px;
+  
+  .result-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+}
+
+// 頁面轉場動畫
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+} 

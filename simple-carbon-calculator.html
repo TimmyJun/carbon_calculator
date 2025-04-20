@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>碳足跡計算器 - 簡易版</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f9f7;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        h1 {
+            color: #2c8850;
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #2c8850;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #2c8850;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #1b5e34;
+        }
+        .results {
+            background-color: #f0f9eb;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .factor-list {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+        }
+        .factor-item {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .factor-item:hover {
+            background-color: #f5f5f5;
+        }
+        .emission-source {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .add-btn {
+            margin-top: 10px;
+            background-color: #4bb07c;
+        }
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c8850;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border-color: #e0e0e0;
+            border-bottom-color: white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>碳足跡計算器 - 簡易版</h1>
+        <p style="text-align: center;">連接環境部碳排放係數資料庫，計算企業碳足跡</p>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('basic-info')">基本資訊</div>
+            <div class="tab" onclick="showTab('scope1')">範疇一：直接排放</div>
+            <div class="tab" onclick="showTab('scope2')">範疇二：間接排放</div>
+            <div class="tab" onclick="showTab('scope3')">範疇三：其他排放</div>
+            <div class="tab" onclick="showTab('results')">計算結果</div>
+        </div>
+        
+        <div id="basic-info" class="tab-content active">
+            <div class="section">
+                <h2>企業基本資料</h2>
+                <div class="form-group">
+                    <label for="company-name">企業名稱</label>
+                    <input type="text" id="company-name" placeholder="請輸入企業名稱">
+                </div>
+                <div class="form-group">
+                    <label for="company-id">統一編號</label>
+                    <input type="text" id="company-id" placeholder="請輸入統一編號">
+                </div>
+                <div class="form-group">
+                    <label for="report-year">報告年份</label>
+                    <input type="number" id="report-year" value="2023">
+                </div>
+                <div class="form-group">
+                    <label for="product-name">產品名稱</label>
+                    <input type="text" id="product-name" placeholder="請輸入產品名稱">
+                </div>
+                <div class="form-group">
+                    <label for="production-units">總產量</label>
+                    <input type="number" id="production-units" value="1000">
+                </div>
+                <div class="form-group">
+                    <label for="production-unit">產量單位</label>
+                    <input type="text" id="production-unit" placeholder="如：箱、個、噸等" value="個">
+                </div>
+            </div>
+            <button onclick="showTab('scope1')">下一步：範疇一</button>
+        </div>
+        
+        <div id="scope1" class="tab-content">
+            <div class="section">
+                <h2>範疇一：直接排放</h2>
+                <p>包括企業擁有或控制的排放源產生的直接溫室氣體排放，如鍋爐燃料燃燒、公司車輛等</p>
+                
+                <div id="scope1-sources"></div>
+                
+                <button class="add-btn" onclick="addEmissionSource('scope1')">+ 新增排放源</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button onclick="showTab('basic-info')">上一步</button>
+                <button onclick="showTab('scope2')">下一步：範疇二</button>
+            </div>
+        </div>
+        
+        <div id="scope2" class="tab-content">
+            <div class="section">
+                <h2>範疇二：間接排放（能源）</h2>
+                <p>因使用外購電力、熱力、蒸汽等能源導致的間接溫室氣體排放</p>
+                
+                <div id="scope2-sources"></div>
+                
+                <button class="add-btn" onclick="addEmissionSource('scope2')">+ 新增排放源</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button onclick="showTab('scope1')">上一步</button>
+                <button onclick="showTab('scope3')">下一步：範疇三</button>
+            </div>
+        </div>
+        
+        <div id="scope3" class="tab-content">
+            <div class="section">
+                <h2>範疇三：其他間接排放</h2>
+                <p>包括企業價值鏈上下游的其他間接排放，如材料採購、員工通勤、產品運輸等</p>
+                
+                <div id="scope3-sources"></div>
+                
+                <button class="add-btn" onclick="addEmissionSource('scope3')">+ 新增排放源</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button onclick="showTab('scope2')">上一步</button>
+                <button onclick="calculateEmissions()">計算碳排放量</button>
+            </div>
+        </div>
+        
+        <div id="results" class="tab-content">
+            <div class="section">
+                <h2>計算結果</h2>
+                
+                <div class="results">
+                    <div class="form-group">
+                        <label>範疇一總排放量</label>
+                        <div id="scope1-total" class="result-value">0.00 kgCO2e</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>範疇二總排放量</label>
+                        <div id="scope2-total" class="result-value">0.00 kgCO2e</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>範疇三總排放量</label>
+                        <div id="scope3-total" class="result-value">0.00 kgCO2e</div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+                        <label>企業總碳排放量</label>
+                        <div id="total-emissions" class="result-value">0.00 kgCO2e</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>單位產品碳足跡</label>
+                        <div id="per-unit-emission" class="result-value">0.00 kgCO2e/個</div>
+                        <div style="font-size: 0.9rem; color: #666; margin-top: 5px;">
+                            (總排放量 ÷ 總產量 <span id="total-units">1000</span> <span id="unit-type">個</span>)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button onclick="showTab('scope3')">上一步</button>
+                <button onclick="window.print()">列印結果</button>
+            </div>
+        </div>
+        
+        <div class="section" style="margin-top: 30px;">
+            <h2>碳排放係數列表</h2>
+            <p>以下為環境部提供的碳排放係數，點擊可使用於計算</p>
+            <input type="text" id="search-factor" placeholder="搜尋係數名稱..." onkeyup="filterFactors()">
+            <div id="factor-list" class="factor-list">
+                <div class="loading">載入中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局變量
+        let carbonFactors = [];
+        let filteredFactors = []; // 儲存過濾後的係數
+        let scope1Sources = [];
+        let scope2Sources = [];
+        let scope3Sources = [];
+        let selectedSourceIndex = -1;
+        let selectedScope = '';
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchCarbonFactors();
+        });
+        
+        // 切換標籤頁
+        function showTab(tabId) {
+            // 隱藏所有標籤內容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 取消所有標籤的激活狀態
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 顯示選定標籤的內容
+            document.getElementById(tabId).classList.add('active');
+            
+            // 激活相應的標籤
+            document.querySelectorAll('.tab').forEach(tab => {
+                if (tab.textContent.toLowerCase().includes(tabId.toLowerCase())) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // 更新總產量顯示
+            if (tabId === 'results') {
+                document.getElementById('total-units').textContent = document.getElementById('production-units').value;
+                document.getElementById('unit-type').textContent = document.getElementById('production-unit').value;
+            }
+        }
+        
+        // 獲取碳排放係數
+        async function fetchCarbonFactors() {
+            try {
+                const response = await fetch('http://localhost:5000/api/carbon-factors');
+                const data = await response.json();
+                
+                if (data && data.records) {
+                    carbonFactors = data.records;
+                    filteredFactors = [...carbonFactors]; // 初始化過濾後的係數為所有係數
+                    renderFactorList();
+                }
+            } catch (error) {
+                console.error('獲取碳排放係數時出錯:', error);
+                document.getElementById('factor-list').innerHTML = '<div style="color: red;">載入失敗，請確保後端服務器正在運行。</div>';
+            }
+        }
+        
+        // 渲染係數列表
+        function renderFactorList() {
+            const factorList = document.getElementById('factor-list');
+            
+            if (filteredFactors.length === 0) {
+                factorList.innerHTML = '<div>沒有找到匹配的係數</div>';
+                return;
+            }
+            
+            factorList.innerHTML = filteredFactors.map((factor, index) => {
+                // 找到這個係數在原始數組中的名稱
+                const factorName = factor.name;
+                return `
+                    <div class="factor-item" onclick="selectFactorByName('${factorName}')">
+                        ${factor.name} (${factor.coe} kgCO2e/${factor.unit})
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 篩選係數
+        function filterFactors() {
+            const searchTerm = document.getElementById('search-factor').value.toLowerCase();
+            filteredFactors = carbonFactors.filter(factor => 
+                factor.name.toLowerCase().includes(searchTerm)
+            );
+            renderFactorList();
+        }
+        
+        // 通過名稱選擇係數
+        function selectFactorByName(factorName) {
+            if (selectedSourceIndex >= 0 && selectedScope) {
+                // 根據名稱找到對應的係數
+                const factor = carbonFactors.find(f => f.name === factorName);
+                
+                if (!factor) {
+                    alert('無法找到對應的係數');
+                    return;
+                }
+                
+                const sources = getScopeSourcesArray(selectedScope);
+                
+                sources[selectedSourceIndex].materialType = factor.name;
+                sources[selectedSourceIndex].factor = parseFloat(factor.coe);
+                sources[selectedSourceIndex].unit = factor.unit;
+                
+                renderEmissionSources(selectedScope);
+                
+                // 計算該排放源的排放量
+                calculateSourceEmission(selectedScope, selectedSourceIndex);
+                
+                // 重置選擇
+                selectedSourceIndex = -1;
+                selectedScope = '';
+            } else {
+                alert('請先選擇一個排放源，然後再選擇係數');
+            }
+        }
+        
+        // 添加排放源
+        function addEmissionSource(scope) {
+            const sources = getScopeSourcesArray(scope);
+            const sourcesTypes = getScopeSourceTypes(scope);
+            
+            const newSource = {
+                id: Date.now(),
+                sourceType: '',
+                materialType: '',
+                amount: 0,
+                factor: 0,
+                unit: '',
+                emission: 0
+            };
+            
+            sources.push(newSource);
+            renderEmissionSources(scope);
+        }
+        
+        // 獲取對應範疇的數據數組
+        function getScopeSourcesArray(scope) {
+            switch(scope) {
+                case 'scope1': return scope1Sources;
+                case 'scope2': return scope2Sources;
+                case 'scope3': return scope3Sources;
+                default: return [];
+            }
+        }
+        
+        // 獲取對應範疇的排放源類型
+        function getScopeSourceTypes(scope) {
+            switch(scope) {
+                case 'scope1':
+                    return [
+                        { value: 'stationaryCombustion', label: '固定燃燒源' },
+                        { value: 'mobileCombustion', label: '移動燃燒源' },
+                        { value: 'processEmission', label: '製程排放' },
+                        { value: 'fugitiveEmission', label: '逸散排放' }
+                    ];
+                case 'scope2':
+                    return [
+                        { value: 'electricity', label: '電力使用' },
+                        { value: 'heat', label: '熱力使用' },
+                        { value: 'steam', label: '蒸氣使用' }
+                    ];
+                case 'scope3':
+                    return [
+                        { value: 'upstreamTransportation', label: '上游運輸' },
+                        { value: 'downstreamTransportation', label: '下游運輸' },
+                        { value: 'employeeCommuting', label: '員工通勤' },
+                        { value: 'businessTravel', label: '商務差旅' },
+                        { value: 'wasteDisposal', label: '廢棄物處理' },
+                        { value: 'purchasedGoodsServices', label: '採購的商品和服務' }
+                    ];
+                default:
+                    return [];
+            }
+        }
+        
+        // 渲染排放源
+        function renderEmissionSources(scope) {
+            const sources = getScopeSourcesArray(scope);
+            const sourceTypes = getScopeSourceTypes(scope);
+            const container = document.getElementById(`${scope}-sources`);
+            
+            container.innerHTML = sources.map((source, index) => `
+                <div class="emission-source">
+                    <div class="form-group">
+                        <label>排放源類型</label>
+                        <select onchange="updateSourceType('${scope}', ${index}, this.value)">
+                            <option value="">請選擇排放源類型</option>
+                            ${sourceTypes.map(type => `
+                                <option value="${type.value}" ${source.sourceType === type.value ? 'selected' : ''}>
+                                    ${type.label}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>使用燃料/材料</label>
+                        <div style="display: flex;">
+                            <input type="text" value="${source.materialType || ''}" readonly style="flex-grow: 1;">
+                            <button onclick="selectEmissionSource('${scope}', ${index})" style="width: auto; margin-left: 10px;">
+                                選擇係數
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>使用量</label>
+                        <div style="display: flex; align-items: center;">
+                            <input type="number" value="${source.amount}" 
+                                onchange="updateSourceAmount('${scope}', ${index}, this.value)" style="flex-grow: 1;">
+                            <span style="margin-left: 10px;">${source.unit || ''}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>排放係數</label>
+                        <input type="text" value="${source.factor}" readonly>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                        <div>
+                            <strong>排放量:</strong> <span>${formatNumber(source.emission)} kgCO2e</span>
+                        </div>
+                        <button onclick="removeSource('${scope}', ${index})" style="background-color: #f56c6c;">
+                            刪除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 選擇排放源（用於選擇係數）
+        function selectEmissionSource(scope, index) {
+            selectedScope = scope;
+            selectedSourceIndex = index;
+            document.getElementById('search-factor').focus();
+            alert('請在下方的係數列表中選擇適用的碳排放係數');
+        }
+        
+        // 更新排放源類型
+        function updateSourceType(scope, index, value) {
+            const sources = getScopeSourcesArray(scope);
+            sources[index].sourceType = value;
+        }
+        
+        // 更新使用量
+        function updateSourceAmount(scope, index, value) {
+            const sources = getScopeSourcesArray(scope);
+            sources[index].amount = parseFloat(value) || 0;
+            
+            // 計算該排放源的排放量
+            calculateSourceEmission(scope, index);
+        }
+        
+        // 計算單個排放源的排放量
+        function calculateSourceEmission(scope, index) {
+            const sources = getScopeSourcesArray(scope);
+            const source = sources[index];
+            
+            if (source.amount && source.factor) {
+                source.emission = source.amount * source.factor;
+            } else {
+                source.emission = 0;
+            }
+            
+            renderEmissionSources(scope);
+        }
+        
+        // 移除排放源
+        function removeSource(scope, index) {
+            const sources = getScopeSourcesArray(scope);
+            sources.splice(index, 1);
+            renderEmissionSources(scope);
+        }
+        
+        // 計算總排放量
+        function calculateEmissions() {
+            // 計算範疇一、二、三的總排放量
+            const scope1Total = scope1Sources.reduce((sum, source) => sum + (source.emission || 0), 0);
+            const scope2Total = scope2Sources.reduce((sum, source) => sum + (source.emission || 0), 0);
+            const scope3Total = scope3Sources.reduce((sum, source) => sum + (source.emission || 0), 0);
+            
+            const totalEmissions = scope1Total + scope2Total + scope3Total;
+            
+            // 計算每單位產品的碳排放
+            const productionUnits = parseFloat(document.getElementById('production-units').value) || 1;
+            const perUnitEmission = productionUnits > 0 ? totalEmissions / productionUnits : 0;
+            
+            // 更新結果顯示
+            document.getElementById('scope1-total').textContent = formatNumber(scope1Total) + ' kgCO2e';
+            document.getElementById('scope2-total').textContent = formatNumber(scope2Total) + ' kgCO2e';
+            document.getElementById('scope3-total').textContent = formatNumber(scope3Total) + ' kgCO2e';
+            document.getElementById('total-emissions').textContent = formatNumber(totalEmissions) + ' kgCO2e';
+            
+            const unitType = document.getElementById('production-unit').value || '個';
+            document.getElementById('per-unit-emission').textContent = formatNumber(perUnitEmission) + ' kgCO2e/' + unitType;
+            
+            // 顯示結果頁面
+            showTab('results');
+        }
+        
+        // 格式化數字
+        function formatNumber(num) {
+            return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+    </script>
+</body>
+</html> 

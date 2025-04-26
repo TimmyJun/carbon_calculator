@@ -1,8 +1,54 @@
 import { createStore } from 'vuex'
 import axios from 'axios'
 
-// 使用環境變量或默認值
-const API_BASE_URL = process.env.VUE_APP_API_URL || '/api'
+// 使用相對路徑
+const API_BASE_URL = '/api'
+
+// 創建 axios 實例
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000, // 增加超時時間
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  withCredentials: false
+})
+
+// 添加請求攔截器
+api.interceptors.request.use(
+  config => {
+    console.log('發送請求:', config.url)
+    return config
+  },
+  error => {
+    console.error('請求錯誤:', error)
+    return Promise.reject(error)
+  }
+)
+
+// 添加響應攔截器
+api.interceptors.response.use(
+  response => {
+    console.log('收到響應:', response.status, response.data)
+    return response
+  },
+  error => {
+    console.error('響應錯誤:', error)
+    if (error.response) {
+      // 服務器返回錯誤
+      console.error('錯誤狀態碼:', error.response.status)
+      console.error('錯誤數據:', error.response.data)
+    } else if (error.request) {
+      // 請求已發送但沒有收到響應
+      console.error('沒有收到響應:', error.request)
+    } else {
+      // 請求設置時出錯
+      console.error('請求設置錯誤:', error.message)
+    }
+    return Promise.reject(error)
+  }
+)
 
 export default createStore({
   state: {
@@ -83,7 +129,14 @@ export default createStore({
       commit('SET_ERROR', null)
 
       try {
-        const response = await axios.get(`${API_BASE_URL}/carbon-factors`)
+        console.log('正在請求API:', `${API_BASE_URL}/carbon-factors`)
+        const response = await api.get('/carbon-factors', {
+          validateStatus: function (status) {
+            return status >= 200 && status < 500
+          }
+        })
+        console.log('API響應:', response.data)
+
         if (response.data) {
           commit('SET_CARBON_FACTORS', response.data.records)
           commit('SET_SCOPE1_FACTORS', response.data.scope1)
@@ -95,7 +148,7 @@ export default createStore({
         }
       } catch (error) {
         console.error('獲取碳排放係數時出錯:', error)
-        commit('SET_ERROR', '無法載入碳排放係數數據，請稍後再試。')
+        commit('SET_ERROR', `無法載入碳排放係數數據: ${error.message}`)
       } finally {
         commit('SET_LOADING', false)
       }

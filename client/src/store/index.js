@@ -1,8 +1,8 @@
 import { createStore } from 'vuex'
 import axios from 'axios'
 
-// 使用相對路徑，讓代理配置生效
-const API_BASE_URL = '/api'
+// 使用環境變量或默認值
+const API_BASE_URL = process.env.VUE_APP_API_URL || '/api'
 
 export default createStore({
   state: {

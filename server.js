@@ -6,7 +6,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const API_KEY = process.env.API_KEY || '0572badc-cbc8-4936-be91-53fa51ade77f';
 const BASE_URL = 'https://data.moenv.gov.tw/api/v2/cfp_p_02';
 
@@ -14,7 +14,9 @@ const BASE_URL = 'https://data.moenv.gov.tw/api/v2/cfp_p_02';
 const apiCache = new NodeCache({ stdTTL: 3600 });
 
 // 中間件
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:8080' // 允許你的前端網址存取
+}));
 app.use(express.json());
 
 // API路由：獲取碳足跡排放係數
